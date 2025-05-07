@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonim Not Oluştur</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Anonim Not Oluştur</h1>
+        <textarea id="noteContent" placeholder="Notunuzu yazın..."></textarea>
+        <button onclick="createNote()">Notu Oluştur & QR Kod Üret</button>
+        
+        <div id="qrCode"></div>
+        <div id="noteLink"></div>
+    </div>
+
+    <script>
+        // Firebase Config (Kendi bilgilerinizi girin)
+        const firebaseConfig = {
+            apiKey: "AIzaSy...",
+            authDomain: "anonim-not.firebaseapp.com",
+            projectId: "anonim-not",
+            storageBucket: "anonim-not.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+        
+        // Firebase'i başlat
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Not oluşturma fonksiyonu
+        async function createNote() {
+            const content = document.getElementById("noteContent").value;
+            if (!content) return alert("Lütfen bir not yazın!");
+
+            try {
+                const noteId = Math.random().toString(36).substr(2, 9); // Rastgele ID
+                await db.collection("notes").doc(noteId).set({
+                    content: content,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // QR Kod Oluştur
+                const noteUrl = `${window.location.href.replace("index.html", "")}view.html?id=${noteId}`;
+                document.getElementById("qrCode").innerHTML = "";
+                new QRCode(document.getElementById("qrCode"), {
+                    text: noteUrl,
+                    width: 200,
+                    height: 200
+                });
+
+                // Linki Göster
+                document.getElementById("noteLink").innerHTML = `
+                    <p>Notunuz hazır! Linki paylaşın:</p>
+                    <a href="${noteUrl}" target="_blank">${noteUrl}</a>
+                `;
+            } catch (error) {
+                alert("Hata: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
