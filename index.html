@@ -1,9 +1,5 @@
 <!DOCTYPE html>
 <html lang="tr">
-<!DOCTYPE html>
-<html lang="tr">
-<!DOCTYPE html>
-<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,6 +40,7 @@
                 <div id="qrCode"></div>
                 <div id="listLink"></div>
                 <button onclick="copyLink()"><i class="fas fa-copy"></i> Linki Kopyala</button>
+                <p class="password-info">Düzenleme şifresi: <span id="editPassword"></span></p>
             </div>
         </div>
     </div>
@@ -117,13 +114,16 @@
 
             try {
                 const listId = Math.random().toString(36).substr(2, 9);
+                const editPassword = Math.random().toString(36).substr(2, 6);
+                
                 await db.collection("lists").doc(listId).set({
                     items: items,
+                    password: editPassword,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 // QR Kod Oluştur
-                const listUrl = `${window.location.href.replace("index.html", "")}view.html?id=${listId}`;
+                const listUrl = `${window.location.href.replace("index.html", "")}view.html?id=${listId}&p=${editPassword}`;
                 document.getElementById("qrCode").innerHTML = "";
                 new QRCode(document.getElementById("qrCode"), {
                     text: listUrl,
@@ -136,6 +136,9 @@
                     <p>Liste linki:</p>
                     <a href="${listUrl}" target="_blank">${listUrl}</a>
                 `;
+
+                // Şifreyi göster
+                document.getElementById("editPassword").textContent = editPassword;
 
                 // Modalı göster
                 document.getElementById("qrModal").style.display = "block";
