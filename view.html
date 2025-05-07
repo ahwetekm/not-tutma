@@ -3,15 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anonim Not</title>
+    <title>Anonim Liste</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>📝 Anonim Not</h1>
-        <div id="noteContent">Yükleniyor...</div>
+        <header>
+            <h1><i class="fas fa-clipboard-list"></i> Anonim Liste</h1>
+        </header>
+
+        <div class="list-container">
+            <div class="list-header">
+                <div class="header-name">Öğe</div>
+                <div class="header-amount">Miktar</div>
+            </div>
+
+            <div class="list-items" id="itemsList">
+                <!-- Öğeler buraya eklenecek -->
+            </div>
+        </div>
+
+        <div class="actions">
+            <button onclick="window.location.href='index.html'" class="secondary">
+                <i class="fas fa-plus"></i> Yeni Liste Oluştur
+            </button>
+        </div>
     </div>
 
     <script>
@@ -28,22 +47,43 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // URL'den not ID'sini al
+        // URL'den liste ID'sini al
         const urlParams = new URLSearchParams(window.location.search);
-        const noteId = urlParams.get("id");
+        const listId = urlParams.get("id");
 
-        // Notu veritabanından çek
-        db.collection("notes").doc(noteId).get()
+        // Listeyi veritabanından çek
+        db.collection("lists").doc(listId).get()
             .then((doc) => {
                 if (doc.exists) {
-                    document.getElementById("noteContent").textContent = doc.data().content;
+                    const listData = doc.data();
+                    renderItems(listData.items);
                 } else {
-                    document.getElementById("noteContent").textContent = "Not bulunamadı!";
+                    document.getElementById("itemsList").innerHTML = "<div class='empty'>Liste bulunamadı!</div>";
                 }
             })
             .catch((error) => {
-                document.getElementById("noteContent").textContent = "Hata: " + error.message;
+                document.getElementById("itemsList").innerHTML = `<div class='empty'>Hata: ${error.message}</div>`;
             });
+
+        // Öğeleri listeleme fonksiyonu
+        function renderItems(items) {
+            const listContainer = document.getElementById("itemsList");
+            
+            if (items.length === 0) {
+                listContainer.innerHTML = "<div class='empty'>Liste boş!</div>";
+                return;
+            }
+
+            items.forEach((item) => {
+                const itemElement = document.createElement("div");
+                itemElement.className = "item";
+                itemElement.innerHTML = `
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-amount">${item.amount}</div>
+                `;
+                listContainer.appendChild(itemElement);
+            });
+        }
     </script>
 </body>
 </html>
