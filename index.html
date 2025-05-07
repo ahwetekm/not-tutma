@@ -2,23 +2,50 @@
 <html lang="tr">
 <!DOCTYPE html>
 <html lang="tr">
+<!DOCTYPE html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anonim Not Oluştur</title>
+    <title>Anonim Liste Oluştur</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Anonim Not Oluştur</h1>
-        <textarea id="noteContent" placeholder="Notunuzu yazın..."></textarea>
-        <button onclick="createNote()">Notu Oluştur & QR Kod Üret</button>
-        
-        <div id="qrCode"></div>
-        <div id="noteLink"></div>
+        <header>
+            <h1><i class="fas fa-clipboard-list"></i> Anonim Liste</h1>
+            <p>Öğelerinizi ekleyin ve paylaşın</p>
+        </header>
+
+        <div class="list-container">
+            <div class="list-controls">
+                <input type="text" id="itemName" placeholder="Öğe adı">
+                <input type="text" id="itemAmount" placeholder="Miktar">
+                <button onclick="addItem()"><i class="fas fa-plus"></i> Ekle</button>
+            </div>
+
+            <div class="list-items" id="itemsList">
+                <!-- Öğeler buraya eklenecek -->
+            </div>
+        </div>
+
+        <div class="actions">
+            <button onclick="createList()" class="primary"><i class="fas fa-qrcode"></i> Liste Oluştur & QR Al</button>
+        </div>
+
+        <div id="qrModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Listeniz Hazır!</h2>
+                <div id="qrCode"></div>
+                <div id="listLink"></div>
+                <button onclick="copyLink()"><i class="fas fa-copy"></i> Linki Kopyala</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -36,35 +63,99 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Not oluşturma fonksiyonu
-        async function createNote() {
-            const content = document.getElementById("noteContent").value;
-            if (!content) return alert("Lütfen bir not yazın!");
+        let items = [];
+
+        // Öğe ekleme fonksiyonu
+        function addItem() {
+            const name = document.getElementById("itemName").value;
+            const amount = document.getElementById("itemAmount").value;
+
+            if (!name) {
+                alert("Lütfen öğe adı girin!");
+                return;
+            }
+
+            items.push({
+                name: name,
+                amount: amount || "1"
+            });
+
+            document.getElementById("itemName").value = "";
+            document.getElementById("itemAmount").value = "";
+            renderItems();
+        }
+
+        // Öğeleri listeleme fonksiyonu
+        function renderItems() {
+            const listContainer = document.getElementById("itemsList");
+            listContainer.innerHTML = "";
+
+            items.forEach((item, index) => {
+                const itemElement = document.createElement("div");
+                itemElement.className = "item";
+                itemElement.innerHTML = `
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-amount">${item.amount}</div>
+                    <button onclick="removeItem(${index})" class="remove-btn"><i class="fas fa-trash"></i></button>
+                `;
+                listContainer.appendChild(itemElement);
+            });
+        }
+
+        // Öğe silme fonksiyonu
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+        }
+
+        // Liste oluşturma fonksiyonu
+        async function createList() {
+            if (items.length === 0) {
+                alert("Lütfen en az bir öğe ekleyin!");
+                return;
+            }
 
             try {
-                const noteId = Math.random().toString(36).substr(2, 9);
-                await db.collection("notes").doc(noteId).set({
-                    content: content,
+                const listId = Math.random().toString(36).substr(2, 9);
+                await db.collection("lists").doc(listId).set({
+                    items: items,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 // QR Kod Oluştur
-                const noteUrl = `${window.location.href.replace("index.html", "")}view.html?id=${noteId}`;
+                const listUrl = `${window.location.href.replace("index.html", "")}view.html?id=${listId}`;
                 document.getElementById("qrCode").innerHTML = "";
                 new QRCode(document.getElementById("qrCode"), {
-                    text: noteUrl,
+                    text: listUrl,
                     width: 200,
                     height: 200
                 });
 
                 // Linki Göster
-                document.getElementById("noteLink").innerHTML = `
-                    <p>Notunuz hazır! Linki paylaşın:</p>
-                    <a href="${noteUrl}" target="_blank">${noteUrl}</a>
+                document.getElementById("listLink").innerHTML = `
+                    <p>Liste linki:</p>
+                    <a href="${listUrl}" target="_blank">${listUrl}</a>
                 `;
+
+                // Modalı göster
+                document.getElementById("qrModal").style.display = "block";
             } catch (error) {
                 alert("Hata: " + error.message);
             }
+        }
+
+        // Modalı kapatma fonksiyonu
+        function closeModal() {
+            document.getElementById("qrModal").style.display = "none";
+            items = [];
+            renderItems();
+        }
+
+        // Link kopyalama fonksiyonu
+        function copyLink() {
+            const link = document.querySelector("#listLink a").href;
+            navigator.clipboard.writeText(link);
+            alert("Link kopyalandı!");
         }
     </script>
 </body>
