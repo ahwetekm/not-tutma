@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
+<!DOCTYPE html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,14 +22,14 @@
     </div>
 
     <script>
-        // Firebase Config (Kendi bilgilerinizi girin)
+        // Firebase Config
         const firebaseConfig = {
-            apiKey: "AIzaSy...",
+            apiKey: "AIzaSyCGG5Ur3YpVxbtkjooMxE6r7RPuAmZoFRI",
             authDomain: "anonim-not.firebaseapp.com",
             projectId: "anonim-not",
             storageBucket: "anonim-not.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
+            messagingSenderId: "1020793266706",
+            appId: "1:1020793266706:web:bdaba147c8367a50dfaecb"
         };
         
         // Firebase'i başlat
@@ -40,7 +42,7 @@
             if (!content) return alert("Lütfen bir not yazın!");
 
             try {
-                const noteId = Math.random().toString(36).substr(2, 9); // Rastgele ID
+                const noteId = Math.random().toString(36).substr(2, 9);
                 await db.collection("notes").doc(noteId).set({
                     content: content,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
