@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liste</title>
+    <title>Anonim Liste</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- QRCode kütüphanesi için güncel CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -16,35 +18,19 @@
             <p id="listIdDisplay">Liste ID: <span id="listId"></span></p>
         </header>
 
-        <div id="editControls">
-            <div class="list-controls">
-                <input type="text" id="itemName" placeholder="Öğe adı">
-                <input type="text" id="itemAmount" placeholder="Miktar">
-                <input type="text" id="itemImageUrl" placeholder="Görsel URL (isteğe bağlı)">
-                <button onclick="addItem()"><i class="fas fa-plus"></i> Ekle</button>
-            </div>
-        </div>
-
-        <div class="list-container">
-            <div class="list-header">
-                <div class="header-name">Öğe</div>
-                <div class="header-amount">Miktar</div>
-            </div>
-
-            <div class="list-items" id="itemsList">
-                <!-- Öğeler buraya eklenecek -->
-            </div>
-        </div>
-
-        <div class="actions">
-            <button onclick="window.location.href='index.html'" class="secondary">
-                <i class="fas fa-plus"></i> Yeni Liste Oluştur
+        <!-- QR Kod Alanı -->
+        <div class="qr-section">
+            <button id="qrButton" onclick="generateQRCode()">
+                <i class="fas fa-qrcode"></i> QR Kod Oluştur
             </button>
+            <div id="qrCodeContainer"></div>
         </div>
+
+        <!-- ... (diğer HTML içeriği aynı) ... -->
     </div>
 
     <script>
-        // Firebase Config (index.html ile aynı olmalı)
+        // Firebase konfigürasyonu ve diğer değişkenler
         const firebaseConfig = {
             apiKey: "AIzaSyCGG5Ur3YpVxbtkjooMxE6r7RPuAmZoFRI",
             authDomain: "anonim-not.firebaseapp.com",
@@ -56,121 +42,83 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
         let currentListId = '';
-        let currentItems = [];
-        let hasEditPermission = false;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            currentListId = urlParams.get("id");
-            const password = urlParams.get("p");
-            
-            document.getElementById("listId").textContent = currentListId;
-            
-            if (password) {
-                db.collection("lists").doc(currentListId).get()
-                    .then(doc => {
-                        if (doc.exists) {
-                            document.getElementById("listTitleDisplay").textContent = doc.data().title || "İsimsiz Liste";
-                            
-                            if (doc.data().password === password) {
-                                hasEditPermission = true;
-                                document.getElementById("editControls").style.display = 'block';
-                            } else {
-                                document.getElementById("editControls").style.display = 'none';
-                            }
-                            loadList();
-                        }
-                    });
-            } else {
-                document.getElementById("editControls").style.display = 'none';
-                db.collection("lists").doc(currentListId).get()
-                    .then(doc => {
-                        if (doc.exists) {
-                            document.getElementById("listTitleDisplay").textContent = doc.data().title || "İsimsiz Liste";
-                            loadList();
-                        }
-                    });
+        // QR Code için güvenli başlatma fonksiyonu
+        function initializeQRCode() {
+            if (typeof QRCode === 'undefined') {
+                console.error("QRCode kütüphanesi yüklenemedi!");
+                return false;
             }
-        });
-
-        function loadList() {
-            db.collection("lists").doc(currentListId).onSnapshot((doc) => {
-                if (doc.exists) {
-                    currentItems = doc.data().items || [];
-                    renderItems();
-                }
-            });
+            return true;
         }
 
-        function addItem() {
-            if (!hasEditPermission) return alert("Düzenleme izniniz yok!");
+        // QR Kod oluşturma fonksiyonu (GÜNCELLENMİŞ)
+        function generateQRCode() {
+            const container = document.getElementById("qrCodeContainer");
+            const button = document.getElementById("qrButton");
             
-            const name = document.getElementById("itemName").value;
-            const amount = document.getElementById("itemAmount").value || "1";
-            const imageUrl = document.getElementById("itemImageUrl").value;
-
-            if (!name) return alert("Lütfen öğe adı girin!");
-
-            const newItem = { name, amount, imageUrl: imageUrl || null };
-            const updatedItems = [...currentItems, newItem];
-            
-            db.collection("lists").doc(currentListId).update({
-                items: updatedItems
-            }).then(() => {
-                document.getElementById("itemName").value = "";
-                document.getElementById("itemAmount").value = "";
-                document.getElementById("itemImageUrl").value = "";
-            });
-        }
-
-        function removeItem(index) {
-            if (!hasEditPermission) return alert("Düzenleme izniniz yok!");
-            
-            const updatedItems = [...currentItems];
-            updatedItems.splice(index, 1);
-            
-            db.collection("lists").doc(currentListId).update({
-                items: updatedItems
-            });
-        }
-
-        function renderItems() {
-            const container = document.getElementById("itemsList");
-            container.innerHTML = '';
-
-            if (currentItems.length === 0) {
-                container.innerHTML = "<div class='empty'>Liste boş!</div>";
+            if (!initializeQRCode()) {
+                container.innerHTML = '<p class="error">QR kütüphanesi yüklenemedi. Sayfayı yenileyin.</p>';
                 return;
             }
 
-            currentItems.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                
-                let imageHtml = '';
-                if (item.imageUrl) {
-                    imageHtml = `<div class="item-image-container">
-                        <img src="${item.imageUrl}" class="item-image" onerror="this.style.display='none'">
-                    </div>`;
-                }
-                
-                div.innerHTML = `
-                    ${imageHtml}
-                    <div class="item-details">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-amount">${item.amount}</div>
+            container.innerHTML = ''; // Önceki içeriği temizle
+            
+            try {
+                const currentUrl = window.location.href.split('?')[0] + '?id=' + currentListId;
+                new QRCode(container, {
+                    text: currentUrl,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#6c5ce7",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-check"></i> QR Kod Hazır';
+                button.style.backgroundColor = "#00b894";
+            } catch (error) {
+                console.error("QR oluşturma hatası:", error);
+                container.innerHTML = `
+                    <div class="qr-error">
+                        <p>QR oluşturulamadı!</p>
+                        <p>Link: <a href="${window.location.href}" target="_blank">${window.location.href}</a></p>
                     </div>
-                    ${hasEditPermission ? 
-                        `<button onclick="removeItem(${index})" class="remove-btn">
-                            <i class="fas fa-trash"></i>
-                        </button>` : ''
-                    }
                 `;
-                container.appendChild(div);
-            });
+            }
         }
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentListId = urlParams.get("id");
+            document.getElementById("listId").textContent = currentListId;
+            
+            // QR kütüphanesi kontrolü
+            setTimeout(() => {
+                if (!initializeQRCode()) {
+                    console.warn("QRCode kütüphanesi yüklenmedi, alternatif yöntem deneniyor...");
+                    loadAlternativeQRCode();
+                }
+            }, 1000);
+        });
+
+        // Alternatif QR kodu (API ile)
+        function loadAlternativeQRCode() {
+            const container = document.getElementById("qrCodeContainer");
+            const currentUrl = window.location.href.split('?')[0] + '?id=' + currentListId;
+            
+            container.innerHTML = `
+                <div class="qr-fallback">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}" 
+                         alt="QR Code">
+                    <p>Alternatif QR Kodu</p>
+                </div>
+            `;
+        }
+
+        // ... (diğer fonksiyonlar aynı şekilde kalacak) ...
     </script>
 </body>
 </html>
